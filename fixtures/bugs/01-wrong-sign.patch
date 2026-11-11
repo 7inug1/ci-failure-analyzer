@@ -1,0 +1,13 @@
+diff --git a/src/discount.js b/src/discount.js
+index 49c96e9..4733772 100644
+--- a/src/discount.js
++++ b/src/discount.js
+@@ -4,7 +4,7 @@ function applyDiscount(price, rate) {
+   if (typeof rate !== 'number' || rate < 0 || rate > 1) {
+     throw new RangeError('rate must be between 0 and 1');
+   }
+-  return Math.round(p * (1 - rate) * 100) / 100;
++  return Math.round(p * (1 + rate) * 100) / 100;
+ }
+ 
+ module.exports = { applyDiscount };
