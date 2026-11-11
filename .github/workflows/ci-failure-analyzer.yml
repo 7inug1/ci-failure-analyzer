@@ -1,0 +1,41 @@
+name: CI Failure Analyzer
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  analyze:
+    if: github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out'
+    runs-on: [self-hosted, local]
+    timeout-minutes: 5
+    steps:
+      - name: 실패 알림 남기기 (데모, 고정 문장)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          BODY="CI가 실패했습니다 (결과: ${CONCLUSION}, 브랜치: ${BRANCH}). 이 문장은 데모용 고정 문장입니다.
+          실행 기록: ${RUN_URL}"
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr comment "$PR_NUMBER" --body "$BODY"
+          else
+            gh label create ci-failure --color D73A4A --description "CI 실패 자동 알림" --force
+            ISSUE=$(gh issue list --label ci-failure --state open --json number --jq '.[0].number // empty')
+            if [ -n "$ISSUE" ]; then
+              gh issue comment "$ISSUE" --body "$BODY"
+            else
+              gh issue create --label ci-failure --title "CI 실패: ${BRANCH}" --body "$BODY"
+            fi
+          fi
