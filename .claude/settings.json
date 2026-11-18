@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git apply:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./analyzer/.env)",
+      "Bash(git push origin main:*)"
+    ]
+  }
+}
