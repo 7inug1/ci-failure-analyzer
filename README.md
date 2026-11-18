@@ -17,10 +17,10 @@ npm run lint
 
 일부러 실패시키기 (확인한 뒤 `git restore src`로 되돌립니다):
 
-| 시나리오 | 명령                                                  | 결과                 |
-| -------- | ----------------------------------------------------- | -------------------- |
-| S1       | `git apply patches/s1-rounding.patch && npm test`     | 1개 실패, 22개 통과  |
-| S2       | `git apply patches/s2-typo-export.patch && npm test`  | 3개 실패, 20개 통과  |
-| L1       | `git apply patches/l1-format-break.patch && npm test` | 12개 실패, 11개 통과 |
+| 시나리오 | 명령                                                                     | 결과                 |
+| -------- | ------------------------------------------------------------------------ | -------------------- |
+| S1       | `git apply patches/s1-discount-floor-instead-of-round.patch && npm test` | 1개 실패, 22개 통과  |
+| S2       | `git apply patches/s2-cart-export-name-typo.patch && npm test`           | 3개 실패, 20개 통과  |
+| L1       | `git apply patches/l1-format-drops-won-suffix.patch && npm test`         | 12개 실패, 11개 통과 |
 
 정답표는 `docs/answers.md`에 있습니다.
