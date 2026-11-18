@@ -24,3 +24,8 @@ npm run lint
 | L1       | `git apply patches/l1-format-drops-won-suffix.patch && npm test`         | 12개 실패, 11개 통과 |
 
 정답표는 `docs/answers.md`에 있습니다.
+
+## 개발 설정
+
+- 커밋 전 비밀값 검사: `brew install gitleaks` 후 `git config core.hooksPath .githooks` (저장소를 새로 받았을 때 한 번)
+- Claude Code: `.claude/settings.json`에 허용 명령과 거부 항목, 파일 수정 후 `npm test` 자동 실행 hook이 있고, `.claude/skills/`에 반복 절차 두 개가 있음
