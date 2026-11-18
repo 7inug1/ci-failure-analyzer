@@ -1,0 +1,7 @@
+#!/bin/sh
+# 커밋 전에 비밀값처럼 보이는 문자열이 있으면 커밋을 막는다 (gitleaks 필요: brew install gitleaks)
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "gitleaks가 없습니다. brew install gitleaks 로 설치하세요." >&2
+  exit 1
+fi
+exec gitleaks git --pre-commit --staged --redact -v
