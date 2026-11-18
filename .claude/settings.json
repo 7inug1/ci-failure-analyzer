@@ -12,5 +12,18 @@
       "Read(./analyzer/.env)",
       "Bash(git push origin main:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm test --silent"
+          }
+        ]
+      }
+    ]
   }
 }
