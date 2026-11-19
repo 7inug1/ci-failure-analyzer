@@ -1,0 +1,35 @@
+린트와 테스트 (Node 20)	Run npm test	﻿2026-11-19T03:27:23.7937540Z ##[group]Run npm test
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:23.7937730Z ^[[36;1mnpm test^[[0m
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:23.7967280Z shell: /bin/bash -e {0}
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:23.7967450Z ##[endgroup]
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:23.9079820Z 
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:23.9080500Z > ci-failure-analyzer@0.1.0 test
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:23.9080790Z > jest
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:23.9080880Z 
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.7701090Z PASS tests/cart.test.js
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8176820Z FAIL tests/price.test.js
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8262060Z   ● applyDiscount › 1,005원에 10% 할인하면 904.5원을 반올림해 905원
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8262310Z 
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8262510Z     expect(received).toBe(expected) // Object.is equality
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8262710Z 
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8262790Z     Expected: 905
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8262990Z     Received: 904
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8263100Z 
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8263190Z     ^[[0m ^[[90m 15 |^[[39m
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8263630Z      ^[[90m 16 |^[[39m   test(^[[32m'1,005원에 10% 할인하면 904.5원을 반올림해 905원'^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8264690Z     ^[[31m^[[1m>^[[22m^[[39m^[[90m 17 |^[[39m     expect(applyDiscount(^[[35m1005^[[39m^[[33m,^[[39m ^[[35m0.1^[[39m))^[[33m.^[[39mtoBe(^[[35m905^[[39m)^[[33m;^[[39m
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8274040Z      ^[[90m    |^[[39m                                      ^[[31m^[[1m^^[[22m^[[39m
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8274490Z      ^[[90m 18 |^[[39m   })^[[33m;^[[39m
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8274710Z      ^[[90m 19 |^[[39m
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8275320Z      ^[[90m 20 |^[[39m   test(^[[32m'할인율이 음수이면 RangeError'^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {^[[0m
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8275560Z 
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8275730Z       at Object.toBe (tests/price.test.js:17:38)
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8275890Z 
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8512150Z PASS tests/format.test.js
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8546310Z 
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8550490Z Test Suites: 1 failed, 2 passed, 3 total
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8551510Z Tests:       1 failed, 22 passed, 23 total
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8551790Z Snapshots:   0 total
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8552070Z Time:        0.34 s, estimated 1 s
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.8552290Z Ran all test suites.
+린트와 테스트 (Node 20)	Run npm test	2026-11-19T03:27:24.9301760Z ##[error]Process completed with exit code 1.
