@@ -13,10 +13,12 @@ permissions:
 jobs:
   test:
     name: 린트와 테스트 (Node 20)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, local]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: 실행 위치 확인 (내 맥인지 보기)
+        run: pwd && hostname
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -24,3 +26,5 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - name: 관찰용 대기 40초 (임시, 단계별 확인이 끝나면 제거)
+        run: sleep 40
