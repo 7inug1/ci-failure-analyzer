@@ -35,7 +35,10 @@ test('maskSecrets: 토큰 모양의 값을 ***로 바꾸고 개수를 센다', (
   ].join('\n');
   const { text: out, count } = maskSecrets(text);
   assert.equal(count, 7);
-  assert.doesNotMatch(out, /ghp_A|github_pat_B|AKIAC|abc\.def|hunter2|xyz789|sk-or-v1-d/);
+  assert.doesNotMatch(
+    out,
+    /ghp_A|github_pat_B|AKIAC|abc\.def|hunter2|xyz789|sk-or-v1-d/,
+  );
   assert.match(out, /password=\*\*\*/);
 });
 
@@ -57,7 +60,9 @@ test('extractErrorSection: 에러 줄의 앞뒤 15줄만 남긴다', () => {
 });
 
 test('extractErrorSection: 12,000자를 넘으면 앞과 뒤를 절반씩 남긴다', () => {
-  const big = Array.from({ length: 2000 }, (_, i) => `error line ${i}`).join('\n');
+  const big = Array.from({ length: 2000 }, (_, i) => `error line ${i}`).join(
+    '\n',
+  );
   const out = extractErrorSection(big);
   assert.ok(out.length <= 12100, `길이 ${out.length}`);
   assert.match(out, /error line 0\b/);
@@ -88,7 +93,11 @@ test('parseFailedTests: 최대 10개까지, 리포트가 없으면 빈 배열', 
     { length: 15 },
     (_, i) => `<testcase name="t${i}"><failure>m${i}</failure></testcase>`,
   ).join('');
-  assert.equal(parseFailedTests(`<testsuites><testsuite>${cases}</testsuite></testsuites>`).length, 10);
+  assert.equal(
+    parseFailedTests(`<testsuites><testsuite>${cases}</testsuite></testsuites>`)
+      .length,
+    10,
+  );
   assert.deepEqual(parseFailedTests(undefined), []);
 });
 
@@ -102,7 +111,19 @@ test('fingerprint: 같은 실패는 같은 12자리, 다른 실패는 다른 값
 });
 
 test('fingerprint: 리포트가 없으면 매번 바뀌는 숫자를 지우고 해시한다', () => {
-  const a = fingerprint({ failedNames: [], errorSection: 'Error at 12:01:33 pid 4821' });
-  const b = fingerprint({ failedNames: [], errorSection: 'Error at 09:55:10 pid 77' });
+  const a = fingerprint({
+    failedNames: [],
+    errorSection: 'Error at 12:01:33 pid 4821',
+  });
+  const b = fingerprint({
+    failedNames: [],
+    errorSection: 'Error at 09:55:10 pid 77',
+  });
   assert.equal(a, b);
+});
+
+test('maskSecrets: 한 비밀값이 두 규칙에 걸려도 한 번만 센다', () => {
+  const { text, count } = maskSecrets('token: ghp_' + 'Z'.repeat(36));
+  assert.equal(count, 1);
+  assert.doesNotMatch(text, /ghp_Z/);
 });
