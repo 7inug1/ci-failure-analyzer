@@ -4,7 +4,7 @@
   "private": true,
   "description": "CI 실패 로그를 받아 분석 결과(마크다운)를 돌려주는 서버",
   "scripts": {
-    "dev": "tsx src/server.ts",
+    "dev": "tsx --env-file=.env src/server.ts",
     "test": "node --import tsx --test src/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

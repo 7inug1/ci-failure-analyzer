@@ -16,7 +16,10 @@ const llm: LlmAnalysis = {
 };
 
 test('countFailures: 리포트에서 실패 개수를 읽는다', () => {
-  assert.equal(countFailures('<testsuites name="j" tests="23" failures="1" errors="0">'), 1);
+  assert.equal(
+    countFailures('<testsuites name="j" tests="23" failures="1" errors="0">'),
+    1,
+  );
   assert.equal(countFailures(undefined), null);
   assert.equal(countFailures('<html></html>'), null);
 });
@@ -50,7 +53,10 @@ test('buildComment: 템플릿 모양(요약, 표, 실패한 테스트, 근거, �
 });
 
 test('buildFailureNotice: 분석 실패 때는 지어내지 않고 사유와 링크만 보여 준다', () => {
-  const md = buildFailureNotice({ reason: '호출 한도 초과', runUrl: 'https://example.com/run/1' });
+  const md = buildFailureNotice({
+    reason: '호출 한도 초과',
+    runUrl: 'https://example.com/run/1',
+  });
   assert.match(md, /자동 분석을 하지 못했습니다/);
   assert.match(md, /호출 한도 초과/);
   assert.match(md, /https:\/\/example\.com\/run\/1/);

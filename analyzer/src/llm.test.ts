@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMessages, parseLlmResponse, callLlm, LlmError, type LlmAnalysis } from './llm.js';
+import {
+  buildMessages,
+  parseLlmResponse,
+  callLlm,
+  LlmError,
+  type LlmAnalysis,
+} from './llm.js';
 
 const valid: LlmAnalysis = {
   title: '할인 결과가 반올림되지 않음',
@@ -22,7 +28,9 @@ function fakeFetch(status: number, body: unknown): typeof fetch {
     })) as unknown as typeof fetch;
 }
 const ok = (content: unknown) =>
-  fakeFetch(200, { choices: [{ message: { content: JSON.stringify(content) } }] });
+  fakeFetch(200, {
+    choices: [{ message: { content: JSON.stringify(content) } }],
+  });
 
 test('buildMessages: 시스템 프롬프트에 네 원칙이, 사용자 메시지에 실패 정보가 들어간다', () => {
   const m = buildMessages({
@@ -44,14 +52,27 @@ test('parseLlmResponse: 올바른 JSON은 통과한다', () => {
 });
 
 test('parseLlmResponse: JSON이 아니거나 칸이 빠지면 LlmError(invalid)', () => {
-  assert.throws(() => parseLlmResponse('그냥 글'), (e) => e instanceof LlmError && e.code === 'invalid');
+  assert.throws(
+    () => parseLlmResponse('그냥 글'),
+    (e) => e instanceof LlmError && e.code === 'invalid',
+  );
   const { title: _t, ...missing } = valid;
-  assert.throws(() => parseLlmResponse(JSON.stringify(missing)), (e) => e instanceof LlmError && e.code === 'invalid');
+  assert.throws(
+    () => parseLlmResponse(JSON.stringify(missing)),
+    (e) => e instanceof LlmError && e.code === 'invalid',
+  );
 });
 
 test('parseLlmResponse: 분류, 심각도, 신뢰도 범위를 검사한다', () => {
-  for (const bad of [{ category: 'magic' }, { severity: 'huge' }, { confidence: 1.5 }]) {
-    assert.throws(() => parseLlmResponse(JSON.stringify({ ...valid, ...bad })), (e) => e instanceof LlmError && e.code === 'invalid');
+  for (const bad of [
+    { category: 'magic' },
+    { severity: 'huge' },
+    { confidence: 1.5 },
+  ]) {
+    assert.throws(
+      () => parseLlmResponse(JSON.stringify({ ...valid, ...bad })),
+      (e) => e instanceof LlmError && e.code === 'invalid',
+    );
   }
 });
 
@@ -59,9 +80,20 @@ test('callLlm: 요청 형식(스키마 강제, temperature 0, 제공사 제한)�
   let captured: { url: string; init: RequestInit } | undefined;
   const f = (async (url: string, init: RequestInit) => {
     captured = { url, init };
-    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(valid) } }] }), { status: 200 });
+    return new Response(
+      JSON.stringify({
+        choices: [{ message: { content: JSON.stringify(valid) } }],
+      }),
+      { status: 200 },
+    );
   }) as unknown as typeof fetch;
-  const r = await callLlm({ apiKey: 'k', model: 'm/x:free', failedTests: [], errorSection: 'e', fetchImpl: f });
+  const r = await callLlm({
+    apiKey: 'k',
+    model: 'm/x:free',
+    failedTests: [],
+    errorSection: 'e',
+    fetchImpl: f,
+  });
   assert.deepEqual(r, valid);
   assert.equal(captured?.url, 'https://openrouter.ai/api/v1/chat/completions');
   const body = JSON.parse(String(captured?.init.body));
@@ -70,30 +102,64 @@ test('callLlm: 요청 형식(스키마 강제, temperature 0, 제공사 제한)�
   assert.equal(body.response_format.type, 'json_schema');
   assert.equal(body.response_format.json_schema.strict, true);
   assert.equal(body.provider.require_parameters, true);
-  assert.equal((captured?.init.headers as Record<string, string>).Authorization, 'Bearer k');
+  assert.equal(
+    (captured?.init.headers as Record<string, string>).Authorization,
+    'Bearer k',
+  );
 });
 
 test('callLlm: 401, 429, 5xx를 구분한다', async () => {
-  const run = (status: number) => callLlm({ apiKey: 'k', model: 'm', failedTests: [], errorSection: '', fetchImpl: fakeFetch(status, {}) });
-  await assert.rejects(run(401), (e) => e instanceof LlmError && e.code === 'auth');
-  await assert.rejects(run(429), (e) => e instanceof LlmError && e.code === 'rate_limit');
-  await assert.rejects(run(502), (e) => e instanceof LlmError && e.code === 'upstream');
+  const run = (status: number) =>
+    callLlm({
+      apiKey: 'k',
+      model: 'm',
+      failedTests: [],
+      errorSection: '',
+      fetchImpl: fakeFetch(status, {}),
+    });
+  await assert.rejects(
+    run(401),
+    (e) => e instanceof LlmError && e.code === 'auth',
+  );
+  await assert.rejects(
+    run(429),
+    (e) => e instanceof LlmError && e.code === 'rate_limit',
+  );
+  await assert.rejects(
+    run(502),
+    (e) => e instanceof LlmError && e.code === 'upstream',
+  );
 });
 
 test('callLlm: 시간이 지나면 LlmError(timeout)', async () => {
   const slow = ((_u: string, init: RequestInit) =>
     new Promise((_res, rej) => {
-      init.signal?.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+      init.signal?.addEventListener('abort', () =>
+        rej(Object.assign(new Error('aborted'), { name: 'AbortError' })),
+      );
     })) as unknown as typeof fetch;
   await assert.rejects(
-    callLlm({ apiKey: 'k', model: 'm', failedTests: [], errorSection: '', fetchImpl: slow, timeoutMs: 20 }),
+    callLlm({
+      apiKey: 'k',
+      model: 'm',
+      failedTests: [],
+      errorSection: '',
+      fetchImpl: slow,
+      timeoutMs: 20,
+    }),
     (e) => e instanceof LlmError && e.code === 'timeout',
   );
 });
 
 test('callLlm: 응답 칸이 빠지면 LlmError(invalid)', async () => {
   await assert.rejects(
-    callLlm({ apiKey: 'k', model: 'm', failedTests: [], errorSection: '', fetchImpl: ok({ title: 'x' }) }),
+    callLlm({
+      apiKey: 'k',
+      model: 'm',
+      failedTests: [],
+      errorSection: '',
+      fetchImpl: ok({ title: 'x' }),
+    }),
     (e) => e instanceof LlmError && e.code === 'invalid',
   );
 });
