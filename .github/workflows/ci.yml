@@ -37,5 +37,3 @@ jobs:
         with:
           name: test-report
           path: report.xml
-      - name: 관찰용 대기 40초 (임시, 단계별 확인이 끝나면 제거)
-        run: sleep 40
