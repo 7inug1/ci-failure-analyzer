@@ -16,4 +16,4 @@ function lineLabel(item) {
   return `${item.name} ${item.qty}개 ${formatWon(item.price * item.qty)}`;
 }
 
-module.exports = { cartTotal, cartSummary, lineLabel };
+module.exports = { cartTotal, cartSummary, lineLable: lineLabel };
