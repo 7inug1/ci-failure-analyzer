@@ -1,0 +1,22 @@
+{
+  "name": "analyzer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CI 실패 로그를 받아 분석 결과(마크다운)를 돌려주는 서버",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "test": "node --import tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "multer": "^2.5.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
