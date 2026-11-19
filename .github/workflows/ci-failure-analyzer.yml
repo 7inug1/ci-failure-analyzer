@@ -35,7 +35,7 @@ jobs:
         run: |
           export PATH="/opt/homebrew/bin:$PATH"  # 내 맥 러너에서 gh를 찾기 위해
           mkdir -p "$RUNNER_TEMP/analysis" && cd "$RUNNER_TEMP/analysis"
-          rm -f log.txt report.xml comment.md title.txt issue.md headers.txt
+          rm -f log.txt report.xml diff.txt comment.md title.txt issue.md headers.txt
           echo "CI 실패 감지: $BRANCH ($EVENT) 실행 $RUN_ID"
           gh run view "$RUN_ID" --log-failed > log.txt
           echo "log.txt: $(wc -l < log.txt | tr -d ' ')줄, $(wc -c < log.txt | tr -d ' ')자"
@@ -45,6 +45,13 @@ jobs:
           else
             echo "report.xml 없음 (리포트 없이 분석)"
           fi
+          # 이번 변경 내용(diff): PR이면 PR의 변경, main push면 그 커밋의 변경
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr diff "$PR_NUMBER" > diff.txt || : > diff.txt
+          else
+            gh api "repos/$GH_REPO/commits/$SHA" -H "Accept: application/vnd.github.v3.diff" > diff.txt || : > diff.txt
+          fi
+          echo "diff.txt: $(wc -c < diff.txt | tr -d ' ')자"
 
       - name: main 실패면 같은 실패의 이슈가 이미 있는지 확인
         id: dedupe
@@ -76,6 +83,7 @@ jobs:
           cd "$RUNNER_TEMP/analysis"
           args=(-F "log=@log.txt" -F "sha=$SHA" -F "branch=$BRANCH" -F "event=$EVENT" -F "run_url=$RUN_URL")
           [ -f report.xml ] && args+=(-F "report=@report.xml")
+          [ -s diff.txt ] && args+=(-F "diff=@diff.txt")
           echo "CI 실패 (자동 분석 못 함)" > title.txt
           # 서버가 꺼져 있거나 오류가 나도 실패 소식은 남긴다 (AI가 한 말을 지어내지 않음)
           if curl -sS -f --max-time 150 -D headers.txt -X POST http://127.0.0.1:8000/analyze "${args[@]}" -o comment.md; then

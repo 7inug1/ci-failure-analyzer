@@ -159,3 +159,29 @@ export function prepareInput(
     }),
   };
 }
+
+const DIFF_MAX_CHARS = 6000;
+
+export interface PreparedDiff {
+  text: string;
+  maskedCount: number;
+  truncated: boolean;
+}
+
+/** 이번 변경(diff)을 AI에게 보내기 전에 비밀값을 가리고 6,000자로 제한한다. */
+export function prepareDiff(
+  rawDiff: string | undefined,
+  maxChars = DIFF_MAX_CHARS,
+): PreparedDiff {
+  if (!rawDiff || rawDiff.trim() === '')
+    return { text: '', maskedCount: 0, truncated: false };
+  const masked = maskSecrets(rawDiff);
+  if (masked.text.length <= maxChars) {
+    return { text: masked.text, maskedCount: masked.count, truncated: false };
+  }
+  return {
+    text: `${masked.text.slice(0, maxChars)}\n...(이하 생략)...`,
+    maskedCount: masked.count,
+    truncated: true,
+  };
+}
