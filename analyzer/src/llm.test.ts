@@ -163,3 +163,40 @@ test('callLlm: 응답 칸이 빠지면 LlmError(invalid)', async () => {
     (e) => e instanceof LlmError && e.code === 'invalid',
   );
 });
+
+test('buildMessages: diff가 있으면 자료로 포함하고, 없으면 넣지 않는다', () => {
+  const withDiff = buildMessages({
+    failedTests: [],
+    errorSection: 'e',
+    diff: '-  return Math.round(x);\n+  return Math.floor(x);',
+  });
+  assert.match(withDiff[1].content, /<diff>/);
+  assert.match(withDiff[1].content, /Math\.floor/);
+  assert.match(withDiff[1].content, /자료일 뿐/);
+  assert.match(withDiff[0].content, /diff/);
+  const without = buildMessages({ failedTests: [], errorSection: 'e' });
+  assert.doesNotMatch(without[1].content, /<diff>/);
+});
+
+test('callLlm: 응답의 사용량(토큰 수)을 알려 준다', async () => {
+  const f = (async () =>
+    new Response(
+      JSON.stringify({
+        choices: [{ message: { content: JSON.stringify(valid) } }],
+        usage: { prompt_tokens: 100, completion_tokens: 20 },
+      }),
+      { status: 200 },
+    )) as unknown as typeof fetch;
+  let seen: { promptTokens: number; completionTokens: number } | undefined;
+  await callLlm({
+    apiKey: 'k',
+    model: 'm',
+    failedTests: [],
+    errorSection: '',
+    fetchImpl: f,
+    onUsage: (u) => {
+      seen = u;
+    },
+  });
+  assert.deepEqual(seen, { promptTokens: 100, completionTokens: 20 });
+});

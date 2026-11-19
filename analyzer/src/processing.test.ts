@@ -7,6 +7,7 @@ import {
   parseFailedTests,
   fingerprint,
   prepareInput,
+  prepareDiff,
 } from './processing.js';
 
 test('cleanLog: 줄 앞의 작업 이름, 단계 이름, 시각을 지운다', () => {
@@ -144,4 +145,23 @@ test('prepareInput: 정리, 비밀값 가리기, 에러 구간, 실패 테스트
   assert.equal(prepareInput(raw, xml).fingerprint, r.fingerprint);
   const other = xml.replace('name="a"', 'name="b"');
   assert.notEqual(prepareInput(raw, other).fingerprint, r.fingerprint);
+});
+
+test('prepareDiff: diff가 없으면 빈 결과', () => {
+  assert.deepEqual(prepareDiff(undefined), { text: '', maskedCount: 0, truncated: false });
+  assert.deepEqual(prepareDiff('  \n'), { text: '', maskedCount: 0, truncated: false });
+});
+
+test('prepareDiff: 비밀값을 가리고 개수를 센다', () => {
+  const r = prepareDiff('+const x = 1;\n+password=hunter2\n');
+  assert.equal(r.maskedCount, 1);
+  assert.doesNotMatch(r.text, /hunter2/);
+  assert.equal(r.truncated, false);
+});
+
+test('prepareDiff: 6,000자를 넘으면 자르고 표시한다', () => {
+  const r = prepareDiff('+' + 'x'.repeat(7000));
+  assert.equal(r.truncated, true);
+  assert.ok(r.text.length <= 6100, `길이 ${r.text.length}`);
+  assert.match(r.text, /이하 생략/);
 });

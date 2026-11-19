@@ -62,3 +62,20 @@ test('buildFailureNotice: 분석 실패 때는 지어내지 않고 사유와 링
   assert.match(md, /https:\/\/example\.com\/run\/1/);
   assert.doesNotMatch(md, /추정 원인/);
 });
+
+test('buildComment: 변경 내용(diff)을 함께 보낸 경우 실행 정보에 크기를 적는다', () => {
+  const base = {
+    llm,
+    model: 'm',
+    sha: 'abc1234',
+    branch: 'b',
+    event: 'pull_request',
+    runUrl: 'u',
+    fingerprint: 'f',
+    maskedCount: 0,
+    failedTests: [],
+    errorSection: 'e',
+  };
+  assert.match(buildComment({ ...base, diffChars: 480 }), /변경 내용\(diff\) 480자/);
+  assert.doesNotMatch(buildComment(base), /변경 내용\(diff\)/);
+});
