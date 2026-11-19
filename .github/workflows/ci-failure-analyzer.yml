@@ -1,0 +1,35 @@
+# CI 실패 분석 (6번 단계의 첫 걸음): CI가 실패나 시간 초과로 끝났을 때만 깨어난다.
+# 지금은 깨어났다는 것과 어떤 실행인지만 출력한다. 로그 분석과 AI 호출은 뒤 단계에서 더한다.
+# workflow_run 워크플로는 기본 브랜치(main)에 있어야 동작한다.
+name: CI 실패 분석
+
+on:
+  workflow_run:
+    workflows: ['CI'] # ci.yml의 name과 글자가 같아야 한다
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  analyze:
+    name: 실패 감지
+    if: ${{ github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out' }}
+    runs-on: [self-hosted, local]
+    timeout-minutes: 5
+    steps:
+      - name: 실패한 CI 정보 출력
+        # 브랜치 이름처럼 바깥에서 오는 값은 명령에 직접 넣지 않고 환경 변수로 받는다
+        env:
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          RESULT: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          echo "CI 실패 감지"
+          echo "실행 번호: $RUN_ID"
+          echo "브랜치: $BRANCH"
+          echo "커밋: $SHA"
+          echo "결과: $RESULT"
+          pwd && hostname
