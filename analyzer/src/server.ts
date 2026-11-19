@@ -85,14 +85,12 @@ app.post(
       console.log(
         `${tag} 실패(${code}: ${why}) ${((Date.now() - started) / 1000).toFixed(1)}초`,
       );
-      res
-        .type('text/markdown')
-        .send(
-          buildFailureNotice({
-            reason: REASONS[code] ?? 'AI 서비스 오류',
-            runUrl,
-          }),
-        );
+      res.type('text/markdown').send(
+        buildFailureNotice({
+          reason: REASONS[code] ?? 'AI 서비스 오류',
+          runUrl,
+        }),
+      );
     }
   },
 );
