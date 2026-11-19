@@ -19,6 +19,7 @@ export interface CommentInput {
   maskedCount: number;
   failedTests: FailedTest[];
   errorSection: string;
+  diffChars?: number;
 }
 
 /** PR 댓글이나 이슈 본문으로 쓸 마크다운. 로그 발췌는 코드 블록 안에 넣는다. */
@@ -57,7 +58,7 @@ export function buildComment(i: CommentInput): string {
     '<details><summary>실행 정보</summary>',
     '',
     `브랜치 \`${i.branch}\` (${i.event}), 커밋 \`${i.sha.slice(0, 7)}\`, [실행 기록](${i.runUrl})`,
-    `지문 \`${i.fingerprint}\`, 가린 비밀값 ${i.maskedCount}개, 모델 \`${i.model}\``,
+    `지문 \`${i.fingerprint}\`, 가린 비밀값 ${i.maskedCount}개, 모델 \`${i.model}\`${i.diffChars ? `, 변경 내용(diff) ${i.diffChars}자 함께 분석` : ''}`,
     '',
     '</details>',
     '',

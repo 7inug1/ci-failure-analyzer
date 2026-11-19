@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { buildComment, buildFailureNotice, countFailures } from './analysis.js';
 import { callLlm, LlmError } from './llm.js';
-import { prepareInput } from './processing.js';
+import { prepareDiff, prepareInput } from './processing.js';
 
 const REASONS: Record<string, string> = {
   auth: 'API 키 오류',
@@ -45,6 +45,7 @@ app.post(
   upload.fields([
     { name: 'log', maxCount: 1 },
     { name: 'report', maxCount: 1 },
+    { name: 'diff', maxCount: 1 },
   ]),
   async (req, res) => {
     const files = req.files as
@@ -55,6 +56,7 @@ app.post(
       return;
     }
     const report = files?.report?.[0]?.buffer.toString('utf-8');
+    const rawDiff = files?.diff?.[0]?.buffer.toString('utf-8');
     const body = req.body as Record<string, string | undefined>;
     const runUrl = body.run_url ?? '';
     const started = Date.now();
@@ -63,7 +65,9 @@ app.post(
     const prepared = prepareInput(log.buffer.toString('utf-8'), report);
     const { errorSection, failedTests } = prepared;
     const fp = prepared.fingerprint;
-    const tag = `[analyze] branch=${body.branch} sha=${(body.sha ?? '').slice(0, 7)} fp=${fp} masked=${prepared.maskedCount} section=${errorSection.length}자 failures=${countFailures(report)}`;
+    const diff = prepareDiff(rawDiff);
+    let usage = '';
+    const tag = `[analyze] branch=${body.branch} sha=${(body.sha ?? '').slice(0, 7)} fp=${fp} masked=${prepared.maskedCount} section=${errorSection.length}자 failures=${countFailures(report)} diff=${diff.text.length}자${diff.truncated ? '(잘림)' : ''}`;
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     const model = process.env.LLM_MODEL;
@@ -73,9 +77,18 @@ app.post(
           'auth',
           'OPENROUTER_API_KEY 또는 LLM_MODEL이 없습니다',
         );
-      const llm = await callLlm({ apiKey, model, failedTests, errorSection });
+      const llm = await callLlm({
+        apiKey,
+        model,
+        failedTests,
+        errorSection,
+        diff: diff.text || undefined,
+        onUsage: (u) => {
+          usage = ` 토큰=${u.promptTokens}/${u.completionTokens}`;
+        },
+      });
       console.log(
-        `${tag} model=${model} ${((Date.now() - started) / 1000).toFixed(1)}초 OK`,
+        `${tag} model=${model} ${((Date.now() - started) / 1000).toFixed(1)}초${usage} OK`,
       );
       res.set(
         'X-Title-B64',
@@ -93,6 +106,7 @@ app.post(
           maskedCount: prepared.maskedCount,
           failedTests,
           errorSection,
+          diffChars: diff.text.length || undefined,
         }),
       );
     } catch (e) {

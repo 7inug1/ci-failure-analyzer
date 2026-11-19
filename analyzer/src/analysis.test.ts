@@ -76,6 +76,9 @@ test('buildComment: 변경 내용(diff)을 함께 보낸 경우 실행 정보에
     failedTests: [],
     errorSection: 'e',
   };
-  assert.match(buildComment({ ...base, diffChars: 480 }), /변경 내용\(diff\) 480자/);
+  assert.match(
+    buildComment({ ...base, diffChars: 480 }),
+    /변경 내용\(diff\) 480자/,
+  );
   assert.doesNotMatch(buildComment(base), /변경 내용\(diff\)/);
 });

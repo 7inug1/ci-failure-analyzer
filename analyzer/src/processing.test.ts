@@ -148,8 +148,16 @@ test('prepareInput: 정리, 비밀값 가리기, 에러 구간, 실패 테스트
 });
 
 test('prepareDiff: diff가 없으면 빈 결과', () => {
-  assert.deepEqual(prepareDiff(undefined), { text: '', maskedCount: 0, truncated: false });
-  assert.deepEqual(prepareDiff('  \n'), { text: '', maskedCount: 0, truncated: false });
+  assert.deepEqual(prepareDiff(undefined), {
+    text: '',
+    maskedCount: 0,
+    truncated: false,
+  });
+  assert.deepEqual(prepareDiff('  \n'), {
+    text: '',
+    maskedCount: 0,
+    truncated: false,
+  });
 });
 
 test('prepareDiff: 비밀값을 가리고 개수를 센다', () => {
