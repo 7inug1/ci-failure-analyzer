@@ -33,3 +33,20 @@ jobs:
           echo "커밋: $SHA"
           echo "결과: $RESULT"
           pwd && hostname
+      - name: 실패한 CI의 로그와 리포트 내려받기
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          export PATH="/opt/homebrew/bin:$PATH"  # 내 맥 러너에서 gh를 찾기 위해
+          mkdir -p "$RUNNER_TEMP/analysis" && cd "$RUNNER_TEMP/analysis"
+          gh run view "$RUN_ID" --log-failed > log.txt
+          echo "log.txt: $(wc -l < log.txt | tr -d ' ')줄, $(wc -c < log.txt | tr -d ' ')자"
+          # 리포트가 없는 실패(빌드 실패 등)도 있으므로 없어도 계속 진행한다
+          if gh run download "$RUN_ID" -n test-report -D .; then
+            echo "report.xml: $(grep -oE 'tests="[0-9]+" failures="[0-9]+"' report.xml | head -1)"
+          else
+            echo "report.xml 없음 (리포트 없이 분석)"
+          fi
+          ls -l
