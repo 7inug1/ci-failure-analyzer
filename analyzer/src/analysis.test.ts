@@ -41,3 +41,23 @@ test('buildFakeAnalysis: 리포트가 없으면 그 사실을 적는다', () => 
   });
   assert.match(md, /리포트 없음/);
 });
+
+test('buildFakeAnalysis: 처리 결과(가린 개수, 지문, 실패한 테스트)를 보여 준다', () => {
+  const md = buildFakeAnalysis({
+    sha: 'abc1234',
+    branch: 'b',
+    event: 'pull_request',
+    runUrl: 'u',
+    logChars: 3000,
+    failures: 1,
+    maskedCount: 2,
+    extractedChars: 800,
+    fingerprint: 'a1b2c3d4e5f6',
+    failedTests: [{ name: '반올림 테스트', message: 'Error: boom' }],
+  });
+  assert.match(md, /가린 비밀값 2개/);
+  assert.match(md, /줄인 로그 800자/);
+  assert.match(md, /a1b2c3d4e5f6/);
+  assert.match(md, /반올림 테스트/);
+  assert.match(md, /Error: boom/);
+});

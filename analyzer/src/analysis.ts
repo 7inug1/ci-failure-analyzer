@@ -1,3 +1,5 @@
+import type { FailedTest } from './processing.js';
+
 export interface AnalysisInput {
   sha: string;
   branch: string;
@@ -5,6 +7,10 @@ export interface AnalysisInput {
   runUrl: string;
   logChars: number;
   failures: number | null;
+  maskedCount?: number;
+  extractedChars?: number;
+  fingerprint?: string;
+  failedTests?: FailedTest[];
 }
 
 /** JUnit 리포트(report.xml)에서 실패한 테스트 개수를 읽는다. 읽을 수 없으면 null. */
@@ -30,6 +36,22 @@ export function buildFakeAnalysis(input: AnalysisInput): string {
     `- 커밋: \`${input.sha.slice(0, 7)}\``,
     `- 로그: ${input.logChars.toLocaleString('en-US')}자`,
     `- 리포트: ${failureLine}`,
+    ...(input.maskedCount === undefined
+      ? []
+      : [`- 가린 비밀값 ${input.maskedCount}개`]),
+    ...(input.extractedChars === undefined
+      ? []
+      : [`- 줄인 로그 ${input.extractedChars.toLocaleString('en-US')}자`]),
+    ...(input.fingerprint
+      ? [`- 같은 실패를 알아보는 지문: \`${input.fingerprint}\``]
+      : []),
+    ...(input.failedTests && input.failedTests.length > 0
+      ? [
+          '',
+          '**실패한 테스트**',
+          ...input.failedTests.map((t) => `- ${t.name}: ${t.message}`),
+        ]
+      : []),
     '',
     `[실행 기록](${input.runUrl})`,
     '',
