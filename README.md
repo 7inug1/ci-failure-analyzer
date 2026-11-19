@@ -28,4 +28,5 @@ npm run lint
 ## 개발 설정
 
 - 커밋 전 비밀값 검사: `brew install gitleaks` 후 `git config core.hooksPath .githooks` (저장소를 새로 받았을 때 한 번)
+- 런타임 비교(Node.js 대 Bun)와 선택 이유: `docs/eval/runtime-benchmark.md`, `docs/adr/0004-runtime.md`
 - Claude Code: `.claude/settings.json`에 허용 명령과 거부 항목, 파일 수정 후 `npm test` 자동 실행 hook이 있고, `.claude/skills/`에 반복 절차 두 개가 있음

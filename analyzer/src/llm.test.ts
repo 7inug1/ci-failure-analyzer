@@ -200,3 +200,25 @@ test('callLlm: 응답의 사용량(토큰 수)을 알려 준다', async () => {
   });
   assert.deepEqual(seen, { promptTokens: 100, completionTokens: 20 });
 });
+
+test('callLlm: baseUrl을 바꾸면 그 주소로 요청한다 (시험용 가짜 AI 서버 연결)', async () => {
+  let url = '';
+  const f = (async (u: string) => {
+    url = u;
+    return new Response(
+      JSON.stringify({
+        choices: [{ message: { content: JSON.stringify(valid) } }],
+      }),
+      { status: 200 },
+    );
+  }) as unknown as typeof fetch;
+  await callLlm({
+    apiKey: 'k',
+    model: 'm',
+    failedTests: [],
+    errorSection: '',
+    fetchImpl: f,
+    baseUrl: 'http://127.0.0.1:9100/v1',
+  });
+  assert.equal(url, 'http://127.0.0.1:9100/v1/chat/completions');
+});

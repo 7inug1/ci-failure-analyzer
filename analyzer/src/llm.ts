@@ -133,6 +133,8 @@ export interface CallLlmInput {
   onUsage?: (usage: { promptTokens: number; completionTokens: number }) => void;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
+  /** 시험용 가짜 AI 서버 주소. 기본값은 OpenRouter */
+  baseUrl?: string;
 }
 
 export async function callLlm(input: CallLlmInput): Promise<LlmAnalysis> {
@@ -144,28 +146,31 @@ export async function callLlm(input: CallLlmInput): Promise<LlmAnalysis> {
   );
   let res: Response;
   try {
-    res = await doFetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${input.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: input.model,
-        temperature: 0,
-        messages: buildMessages(input),
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'ci_failure_analysis',
-            strict: true,
-            schema: SCHEMA,
-          },
+    res = await doFetch(
+      `${input.baseUrl ?? 'https://openrouter.ai/api/v1'}/chat/completions`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${input.apiKey}`,
         },
-        provider: { require_parameters: true },
-      }),
-      signal: controller.signal,
-    });
+        body: JSON.stringify({
+          model: input.model,
+          temperature: 0,
+          messages: buildMessages(input),
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'ci_failure_analysis',
+              strict: true,
+              schema: SCHEMA,
+            },
+          },
+          provider: { require_parameters: true },
+        }),
+        signal: controller.signal,
+      },
+    );
   } catch (e) {
     if ((e as Error).name === 'AbortError')
       throw new LlmError('timeout', '응답 시간이 초과됐습니다');

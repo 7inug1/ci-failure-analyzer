@@ -83,6 +83,7 @@ app.post(
         failedTests,
         errorSection,
         diff: diff.text || undefined,
+        baseUrl: process.env.OPENROUTER_BASE_URL || undefined,
         onUsage: (u) => {
           usage = ` 토큰=${u.promptTokens}/${u.completionTokens}`;
         },

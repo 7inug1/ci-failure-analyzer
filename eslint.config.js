@@ -12,4 +12,12 @@ module.exports = [
     },
     rules: { eqeqeq: 'error' },
   },
+  {
+    files: ['**/*.mjs'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: { ...globals.node },
+    },
+    rules: { eqeqeq: 'error' },
+  },
 ];
