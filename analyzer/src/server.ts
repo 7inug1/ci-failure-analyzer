@@ -2,13 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { buildComment, buildFailureNotice, countFailures } from './analysis.js';
 import { callLlm, LlmError } from './llm.js';
-import {
-  cleanLog,
-  maskSecrets,
-  extractErrorSection,
-  parseFailedTests,
-  fingerprint,
-} from './processing.js';
+import { prepareInput } from './processing.js';
 
 const REASONS: Record<string, string> = {
   auth: 'API 키 오류',
@@ -23,6 +17,28 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
 });
+
+// 지문만 계산하는 입구 (AI를 부르지 않음). 같은 실패의 이슈가 이미 있는지 먼저 확인할 때 쓴다.
+app.post(
+  '/fingerprint',
+  upload.fields([
+    { name: 'log', maxCount: 1 },
+    { name: 'report', maxCount: 1 },
+  ]),
+  (req, res) => {
+    const files = req.files as
+      Record<string, Express.Multer.File[]> | undefined;
+    const log = files?.log?.[0];
+    if (!log) {
+      res.status(400).type('text/plain').send('log 파일이 필요합니다');
+      return;
+    }
+    const report = files?.report?.[0]?.buffer.toString('utf-8');
+    res
+      .type('text/plain')
+      .send(prepareInput(log.buffer.toString('utf-8'), report).fingerprint);
+  },
+);
 
 app.post(
   '/analyze',
@@ -44,14 +60,10 @@ app.post(
     const started = Date.now();
 
     // 외부로 나가기 전에 정리하고 비밀값을 가린다
-    const masked = maskSecrets(cleanLog(log.buffer.toString('utf-8')));
-    const errorSection = extractErrorSection(masked.text);
-    const failedTests = parseFailedTests(report);
-    const fp = fingerprint({
-      failedNames: failedTests.map((t) => t.name),
-      errorSection,
-    });
-    const tag = `[analyze] branch=${body.branch} sha=${(body.sha ?? '').slice(0, 7)} fp=${fp} masked=${masked.count} section=${errorSection.length}자 failures=${countFailures(report)}`;
+    const prepared = prepareInput(log.buffer.toString('utf-8'), report);
+    const { errorSection, failedTests } = prepared;
+    const fp = prepared.fingerprint;
+    const tag = `[analyze] branch=${body.branch} sha=${(body.sha ?? '').slice(0, 7)} fp=${fp} masked=${prepared.maskedCount} section=${errorSection.length}자 failures=${countFailures(report)}`;
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     const model = process.env.LLM_MODEL;
@@ -65,6 +77,10 @@ app.post(
       console.log(
         `${tag} model=${model} ${((Date.now() - started) / 1000).toFixed(1)}초 OK`,
       );
+      res.set(
+        'X-Title-B64',
+        Buffer.from(llm.title, 'utf-8').toString('base64'),
+      );
       res.type('text/markdown').send(
         buildComment({
           llm,
@@ -74,7 +90,7 @@ app.post(
           event: body.event ?? 'unknown',
           runUrl,
           fingerprint: fp,
-          maskedCount: masked.count,
+          maskedCount: prepared.maskedCount,
           failedTests,
           errorSection,
         }),

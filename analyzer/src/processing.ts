@@ -133,3 +133,29 @@ export function fingerprint(input: {
   }
   return createHash('sha1').update(basis).digest('hex').slice(0, 12);
 }
+
+export interface PreparedInput {
+  maskedCount: number;
+  errorSection: string;
+  failedTests: FailedTest[];
+  fingerprint: string;
+}
+
+/** 로그와 리포트를 받아 서버가 쓰는 처리 결과를 한 번에 만든다. 외부로 나가는 내용은 비밀값이 가려진 것이다. */
+export function prepareInput(
+  rawLog: string,
+  reportXml?: string,
+): PreparedInput {
+  const masked = maskSecrets(cleanLog(rawLog));
+  const errorSection = extractErrorSection(masked.text);
+  const failedTests = parseFailedTests(reportXml);
+  return {
+    maskedCount: masked.count,
+    errorSection,
+    failedTests,
+    fingerprint: fingerprint({
+      failedNames: failedTests.map((t) => t.name),
+      errorSection,
+    }),
+  };
+}
