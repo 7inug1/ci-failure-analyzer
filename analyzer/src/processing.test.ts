@@ -6,6 +6,7 @@ import {
   extractErrorSection,
   parseFailedTests,
   fingerprint,
+  prepareInput,
 } from './processing.js';
 
 test('cleanLog: 줄 앞의 작업 이름, 단계 이름, 시각을 지운다', () => {
@@ -126,4 +127,21 @@ test('maskSecrets: 한 비밀값이 두 규칙에 걸려도 한 번만 센다', 
   const { text, count } = maskSecrets('token: ghp_' + 'Z'.repeat(36));
   assert.equal(count, 1);
   assert.doesNotMatch(text, /ghp_Z/);
+});
+
+test('prepareInput: 정리, 비밀값 가리기, 에러 구간, 실패 테스트, 지문을 한 번에 처리한다', () => {
+  const raw = [
+    '린트와 테스트\tRun npm test\t2026-11-19T03:27:33.1Z FAIL tests/price.test.js',
+    '린트와 테스트\tRun npm test\t2026-11-19T03:27:34.1Z password=hunter2',
+  ].join('\n');
+  const xml =
+    '<testsuites tests="2" failures="1"><testsuite><testcase name="a"><failure>Error: x</failure></testcase></testsuite></testsuites>';
+  const r = prepareInput(raw, xml);
+  assert.equal(r.maskedCount, 1);
+  assert.doesNotMatch(r.errorSection, /hunter2/);
+  assert.equal(r.failedTests.length, 1);
+  assert.match(r.fingerprint, /^[0-9a-f]{12}$/);
+  assert.equal(prepareInput(raw, xml).fingerprint, r.fingerprint);
+  const other = xml.replace('name="a"', 'name="b"');
+  assert.notEqual(prepareInput(raw, other).fingerprint, r.fingerprint);
 });
