@@ -11,6 +11,7 @@ on:
 permissions:
   actions: read
   contents: read
+  pull-requests: write
 
 jobs:
   analyze:
@@ -50,3 +51,34 @@ jobs:
             echo "report.xml 없음 (리포트 없이 분석)"
           fi
           ls -l
+      - name: 분석 서버에 보내 답 받기
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          EVENT: ${{ github.event.workflow_run.event }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          cd "$RUNNER_TEMP/analysis"
+          args=(-F "log=@log.txt" -F "sha=$SHA" -F "branch=$BRANCH" -F "event=$EVENT" -F "run_url=$RUN_URL")
+          [ -f report.xml ] && args+=(-F "report=@report.xml")
+          # 서버가 꺼져 있거나 오류가 나도 실패 소식은 남긴다 (AI가 한 말을 지어내지 않음)
+          if curl -sS -f --max-time 120 -X POST http://127.0.0.1:8000/analyze "${args[@]}" -o comment.md; then
+            echo "분석 서버 응답 받음: $(wc -c < comment.md | tr -d ' ')자"
+          else
+            printf '### CI 실패 분석\n\n자동 분석을 하지 못했습니다 (분석 서버에 연결하지 못함).\n\n[실행 기록](%s)\n' "$RUN_URL" > comment.md
+            echo "분석 서버 연결 실패, 대신 알림 댓글을 준비함"
+          fi
+          cat comment.md
+      - name: PR에 댓글 달기
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          export PATH="/opt/homebrew/bin:$PATH"
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr comment "$PR_NUMBER" --body-file "$RUNNER_TEMP/analysis/comment.md"
+            echo "PR #$PR_NUMBER 에 댓글을 달았습니다"
+          else
+            echo "연결된 PR이 없음 (main의 실패는 이슈로 남기는 단계에서 처리)"
+          fi

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { buildFakeAnalysis, countFailures } from './analysis.js';
 
 test('countFailures: 리포트에서 실패 개수를 읽는다', () => {
-  const xml = '<testsuites name="jest tests" tests="23" failures="1" errors="0">';
+  const xml =
+    '<testsuites name="jest tests" tests="23" failures="1" errors="0">';
   assert.equal(countFailures(xml), 1);
 });
 
