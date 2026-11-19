@@ -206,7 +206,9 @@ test('callLlm: baseUrl을 바꾸면 그 주소로 요청한다 (시험용 가짜
   const f = (async (u: string) => {
     url = u;
     return new Response(
-      JSON.stringify({ choices: [{ message: { content: JSON.stringify(valid) } }] }),
+      JSON.stringify({
+        choices: [{ message: { content: JSON.stringify(valid) } }],
+      }),
       { status: 200 },
     );
   }) as unknown as typeof fetch;
