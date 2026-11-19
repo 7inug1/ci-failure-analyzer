@@ -25,5 +25,11 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - name: 테스트 리포트 올리기 (실패해도 실행)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: report.xml
       - name: 관찰용 대기 40초 (임시, 단계별 확인이 끝나면 제거)
         run: sleep 40
