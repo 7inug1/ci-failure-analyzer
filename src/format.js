@@ -1,5 +1,5 @@
 function formatWon(amount) {
-  return `${Math.round(amount).toLocaleString('ko-KR')}원`;
+  return `${Math.round(amount).toLocaleString('ko-KR')}`;
 }
 
 module.exports = { formatWon };
