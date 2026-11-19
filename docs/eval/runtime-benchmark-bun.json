@@ -1,0 +1,16 @@
+{
+  "runtime": "bun",
+  "version": "1.4.4",
+  "trials": 5,
+  "startup_ms": 131,
+  "idle_mb": 50.2,
+  "load_mb": 102.7,
+  "fingerprint_req_per_sec": 2548,
+  "fingerprint_p50_ms": 7.3,
+  "fingerprint_p95_ms": 13,
+  "fingerprint_errors": 0,
+  "analyze_5_concurrent_wall_ms": 2021,
+  "analyze_20_concurrent_wall_ms": 2043,
+  "mock_llm_delay_ms": 2000,
+  "all_ok": true
+}
