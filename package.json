@@ -29,6 +29,10 @@
           "outputName": "report.xml"
         }
       ]
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/analyzer/"
     ]
   }
 }

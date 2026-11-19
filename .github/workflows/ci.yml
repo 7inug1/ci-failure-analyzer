@@ -25,6 +25,12 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - name: 분석 서버 설치와 타입 검사
+        working-directory: analyzer
+        run: npm ci && npm run typecheck
+      - name: 분석 서버 테스트
+        working-directory: analyzer
+        run: npm test
       - name: 테스트 리포트 올리기 (실패해도 실행)
         if: always()
         uses: actions/upload-artifact@v4
