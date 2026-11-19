@@ -1,5 +1,5 @@
-# CI 실패 분석 (6번 단계의 첫 걸음): CI가 실패나 시간 초과로 끝났을 때만 깨어난다.
-# 지금은 깨어났다는 것과 어떤 실행인지만 출력한다. 로그 분석과 AI 호출은 뒤 단계에서 더한다.
+# CI 실패 분석: CI가 실패나 시간 초과로 끝났을 때만 깨어난다.
+# 로그와 리포트를 내려받아 분석 서버(내 맥)에 보내 답을 받고, PR이면 댓글, main이면 이슈로 남긴다.
 # workflow_run 워크플로는 기본 브랜치(main)에 있어야 동작한다.
 name: CI 실패 분석
 
@@ -12,36 +12,31 @@ permissions:
   actions: read
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   analyze:
-    name: 실패 감지
+    name: 실패 분석
     if: ${{ github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out' }}
     runs-on: [self-hosted, local]
-    timeout-minutes: 5
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      # 브랜치 이름처럼 바깥에서 오는 값은 명령에 직접 넣지 않고 환경 변수로 받는다
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      BRANCH: ${{ github.event.workflow_run.head_branch }}
+      EVENT: ${{ github.event.workflow_run.event }}
+      RUN_URL: ${{ github.event.workflow_run.html_url }}
+      PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
     steps:
-      - name: 실패한 CI 정보 출력
-        # 브랜치 이름처럼 바깥에서 오는 값은 명령에 직접 넣지 않고 환경 변수로 받는다
-        env:
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
-          RESULT: ${{ github.event.workflow_run.conclusion }}
-        run: |
-          echo "CI 실패 감지"
-          echo "실행 번호: $RUN_ID"
-          echo "브랜치: $BRANCH"
-          echo "커밋: $SHA"
-          echo "결과: $RESULT"
-          pwd && hostname
       - name: 실패한 CI의 로그와 리포트 내려받기
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           export PATH="/opt/homebrew/bin:$PATH"  # 내 맥 러너에서 gh를 찾기 위해
           mkdir -p "$RUNNER_TEMP/analysis" && cd "$RUNNER_TEMP/analysis"
+          rm -f log.txt report.xml comment.md title.txt issue.md headers.txt
+          echo "CI 실패 감지: $BRANCH ($EVENT) 실행 $RUN_ID"
           gh run view "$RUN_ID" --log-failed > log.txt
           echo "log.txt: $(wc -l < log.txt | tr -d ' ')줄, $(wc -c < log.txt | tr -d ' ')자"
           # 리포트가 없는 실패(빌드 실패 등)도 있으므로 없어도 계속 진행한다
@@ -50,35 +45,62 @@ jobs:
           else
             echo "report.xml 없음 (리포트 없이 분석)"
           fi
-          ls -l
+
+      - name: main 실패면 같은 실패의 이슈가 이미 있는지 확인
+        id: dedupe
+        run: |
+          export PATH="/opt/homebrew/bin:$PATH"
+          cd "$RUNNER_TEMP/analysis"
+          echo "repeat=false" >> "$GITHUB_OUTPUT"
+          if [ -n "$PR_NUMBER" ]; then echo "PR #$PR_NUMBER 의 실패: 이슈 확인은 건너뜀"; exit 0; fi
+          args=(-F "log=@log.txt"); [ -f report.xml ] && args+=(-F "report=@report.xml")
+          # 서버가 꺼져 있으면 지문 없이 계속한다 (그때는 안내 이슈가 만들어짐)
+          fp=$(curl -sS -f --max-time 30 -X POST http://127.0.0.1:8000/fingerprint "${args[@]}") || fp=""
+          echo "fp=$fp" >> "$GITHUB_OUTPUT"
+          echo "지문: ${fp:-없음}"
+          [ -z "$fp" ] && exit 0
+          issue=$(gh issue list --label ci-failure --state open --json number,body --jq ".[]|select(.body|contains(\"fingerprint: $fp\"))|.number" | head -1)
+          if [ -n "$issue" ]; then
+            n=$(gh issue view "$issue" --json comments --jq '[.comments[]|select(.body|startswith("같은 실패가 다시 발생"))]|length')
+            n=$((n + 2))
+            gh issue comment "$issue" --body "같은 실패가 다시 발생했습니다 (${n}번째). 같은 지문의 이슈가 있어 AI 분석은 다시 하지 않았습니다. [실행 기록]($RUN_URL)"
+            echo "이슈 #$issue 에 반복 댓글(${n}번째)을 남겼고, AI는 부르지 않음"
+            echo "repeat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "같은 지문의 열린 이슈 없음: 새로 분석"
+          fi
+
       - name: 분석 서버에 보내 답 받기
-        env:
-          SHA: ${{ github.event.workflow_run.head_sha }}
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
-          EVENT: ${{ github.event.workflow_run.event }}
-          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        if: ${{ steps.dedupe.outputs.repeat != 'true' }}
         run: |
           cd "$RUNNER_TEMP/analysis"
           args=(-F "log=@log.txt" -F "sha=$SHA" -F "branch=$BRANCH" -F "event=$EVENT" -F "run_url=$RUN_URL")
           [ -f report.xml ] && args+=(-F "report=@report.xml")
+          echo "CI 실패 (자동 분석 못 함)" > title.txt
           # 서버가 꺼져 있거나 오류가 나도 실패 소식은 남긴다 (AI가 한 말을 지어내지 않음)
-          if curl -sS -f --max-time 120 -X POST http://127.0.0.1:8000/analyze "${args[@]}" -o comment.md; then
+          if curl -sS -f --max-time 150 -D headers.txt -X POST http://127.0.0.1:8000/analyze "${args[@]}" -o comment.md; then
             echo "분석 서버 응답 받음: $(wc -c < comment.md | tr -d ' ')자"
+            b64=$(grep -i '^x-title-b64:' headers.txt | awk '{print $2}' | tr -d '\r') || b64=""
+            [ -n "$b64" ] && python3 -c "import sys,base64;print(base64.b64decode(sys.argv[1]).decode()[:80])" "$b64" > title.txt || true
           else
             printf '### CI 실패 분석\n\n자동 분석을 하지 못했습니다 (분석 서버에 연결하지 못함).\n\n[실행 기록](%s)\n' "$RUN_URL" > comment.md
             echo "분석 서버 연결 실패, 대신 알림 댓글을 준비함"
           fi
           cat comment.md
-      - name: PR에 댓글 달기
+
+      - name: PR이면 댓글, main이면 이슈로 남기기
+        if: ${{ steps.dedupe.outputs.repeat != 'true' }}
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          FP: ${{ steps.dedupe.outputs.fp }}
         run: |
           export PATH="/opt/homebrew/bin:$PATH"
+          cd "$RUNNER_TEMP/analysis"
           if [ -n "$PR_NUMBER" ]; then
-            gh pr comment "$PR_NUMBER" --body-file "$RUNNER_TEMP/analysis/comment.md"
+            gh pr comment "$PR_NUMBER" --body-file comment.md
             echo "PR #$PR_NUMBER 에 댓글을 달았습니다"
           else
-            echo "연결된 PR이 없음 (main의 실패는 이슈로 남기는 단계에서 처리)"
+            gh label create ci-failure --color D93F0B --description "CI 실패 자동 분석" --force > /dev/null
+            { cat comment.md; printf '\n\nfingerprint: %s\n' "${FP:-unknown}"; } > issue.md
+            url=$(gh issue create --title "[CI] $(cat title.txt)" --label ci-failure --body-file issue.md)
+            echo "이슈를 만들었습니다: $url"
           fi
